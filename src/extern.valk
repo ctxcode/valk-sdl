@@ -1,0 +1,134 @@
+// Raw C extern declarations for SDL3.
+
+link "SDL3"
+#if OS == "win"
+link "user32"
+link "gdi32"
+link "winmm"
+link "imm32"
+link "ole32"
+link "oleaut32"
+link "version"
+link "uuid"
+link "advapi32"
+link "setupapi"
+link "shell32"
+link "cfgmgr32"
+link "kernel32"
+#end
+
+extern fn SDL_Init(flags: u32) bool;
+extern fn SDL_InitSubSystem(flags: u32) bool;
+extern fn SDL_QuitSubSystem(flags: u32) void;
+extern fn SDL_Quit() void;
+extern fn SDL_GetError() ?cstring;
+extern fn SDL_GetVersion() i32;
+extern fn SDL_SetHint(name: ?cstring, value: ?cstring) bool;
+extern fn SDL_GetHint(name: ?cstring) ?cstring;
+extern fn SDL_GetTicks() u64;
+extern fn SDL_GetTicksNS() u64;
+extern fn SDL_Delay(ms: u32) void;
+extern fn SDL_DelayNS(ns: u64) void;
+extern fn SDL_GetPerformanceCounter() u64;
+extern fn SDL_GetPerformanceFrequency() u64;
+extern fn SDL_free(mem: ?ptr) void;
+
+// Windows & Displays
+extern fn SDL_CreateWindow(title: ?cstring, w: i32, h: i32, flags: u64) ?ptr;
+extern fn SDL_DestroyWindow(window: ?ptr) void;
+extern fn SDL_CreateWindowAndRenderer(title: ?cstring, width: i32, height: i32, window_flags: u64, window: *?ptr, renderer: *?ptr) bool;
+extern fn SDL_GetWindowID(window: ?ptr) u32;
+extern fn SDL_ShowWindow(window: ?ptr) bool;
+extern fn SDL_HideWindow(window: ?ptr) bool;
+extern fn SDL_RaiseWindow(window: ?ptr) bool;
+extern fn SDL_MaximizeWindow(window: ?ptr) bool;
+extern fn SDL_MinimizeWindow(window: ?ptr) bool;
+extern fn SDL_RestoreWindow(window: ?ptr) bool;
+extern fn SDL_SetWindowTitle(window: ?ptr, title: ?cstring) bool;
+extern fn SDL_GetWindowTitle(window: ?ptr) ?cstring;
+extern fn SDL_SetWindowSize(window: ?ptr, w: i32, h: i32) bool;
+extern fn SDL_GetWindowSize(window: ?ptr, w: ?*i32, h: ?*i32) bool;
+extern fn SDL_GetWindowSizeInPixels(window: ?ptr, w: ?*i32, h: ?*i32) bool;
+extern fn SDL_SetWindowPosition(window: ?ptr, x: i32, y: i32) bool;
+extern fn SDL_GetWindowPosition(window: ?ptr, x: ?*i32, y: ?*i32) bool;
+extern fn SDL_SetWindowMinimumSize(window: ?ptr, min_w: i32, min_h: i32) bool;
+extern fn SDL_SetWindowMaximumSize(window: ?ptr, max_w: i32, max_h: i32) bool;
+extern fn SDL_SetWindowIcon(window: ?ptr, icon: ?ptr) bool;
+extern fn SDL_GetWindowFlags(window: ?ptr) u64;
+extern fn SDL_GetWindowDisplayScale(window: ?ptr) f32;
+extern fn SDL_GetWindowPixelDensity(window: ?ptr) f32;
+extern fn SDL_SetWindowFullscreen(window: ?ptr, fullscreen: bool) bool;
+extern fn SDL_SetWindowResizable(window: ?ptr, resizable: bool) bool;
+extern fn SDL_SetWindowOpacity(window: ?ptr, opacity: f32) bool;
+extern fn SDL_SyncWindow(window: ?ptr) bool;
+extern fn SDL_GetDisplayForWindow(window: ?ptr) u32;
+extern fn SDL_GetPrimaryDisplay() u32;
+extern fn SDL_GetDisplayBounds(display_id: u32, rect: *Rect) bool;
+extern fn SDL_GetDisplayUsableBounds(display_id: u32, rect: *Rect) bool;
+
+// Renderer & Textures
+extern fn SDL_CreateRenderer(window: ?ptr, name: ?cstring) ?ptr;
+extern fn SDL_DestroyRenderer(renderer: ?ptr) void;
+extern fn SDL_GetRendererName(renderer: ?ptr) ?cstring;
+extern fn SDL_GetNumRenderDrivers() i32;
+extern fn SDL_GetRenderDriver(index: i32) ?cstring;
+extern fn SDL_SetRenderDrawColor(renderer: ?ptr, r: u8, g: u8, b: u8, a: u8) bool;
+extern fn SDL_SetRenderDrawBlendMode(renderer: ?ptr, blend_mode: u32) bool;
+extern fn SDL_RenderClear(renderer: ?ptr) bool;
+extern fn SDL_RenderPresent(renderer: ?ptr) bool;
+extern fn SDL_SetRenderVSync(renderer: ?ptr, vsync: i32) bool;
+extern fn SDL_SetRenderClipRect(renderer: ?ptr, rect: ?*Rect) bool;
+extern fn SDL_RenderFillRect(renderer: ?ptr, rect: ?*FRect) bool;
+extern fn SDL_RenderRect(renderer: ?ptr, rect: ?*FRect) bool;
+extern fn SDL_RenderLine(renderer: ?ptr, x1: f32, y1: f32, x2: f32, y2: f32) bool;
+extern fn SDL_RenderPoint(renderer: ?ptr, x: f32, y: f32) bool;
+extern fn SDL_RenderGeometry(renderer: ?ptr, texture: ?ptr, vertices: ?*[Vertex], num_vertices: i32, indices: ?*[i32], num_indices: i32) bool;
+extern fn SDL_SetRenderLogicalPresentation(renderer: ?ptr, w: i32, h: i32, mode: i32) bool;
+extern fn SDL_SetRenderScale(renderer: ?ptr, scale_x: f32, scale_y: f32) bool;
+extern fn SDL_CreateTexture(renderer: ?ptr, format: u32, access: i32, w: i32, h: i32) ?ptr;
+extern fn SDL_CreateTextureFromSurface(renderer: ?ptr, surface: ?ptr) ?ptr;
+extern fn SDL_DestroyTexture(texture: ?ptr) void;
+extern fn SDL_UpdateTexture(texture: ?ptr, rect: ?*Rect, pixels: ?ptr, pitch: i32) bool;
+extern fn SDL_LockTexture(texture: ?ptr, rect: ?*Rect, pixels: *?ptr, pitch: *i32) bool;
+extern fn SDL_UnlockTexture(texture: ?ptr) void;
+extern fn SDL_SetTextureBlendMode(texture: ?ptr, blend_mode: u32) bool;
+extern fn SDL_SetTextureScaleMode(texture: ?ptr, scale_mode: i32) bool;
+extern fn SDL_SetTextureColorMod(texture: ?ptr, r: u8, g: u8, b: u8) bool;
+extern fn SDL_SetTextureAlphaMod(texture: ?ptr, alpha: u8) bool;
+extern fn SDL_RenderTexture(renderer: ?ptr, texture: ?ptr, srcrect: ?*FRect, dstrect: ?*FRect) bool;
+extern fn SDL_RenderTextureRotated(renderer: ?ptr, texture: ?ptr, srcrect: ?*FRect, dstrect: ?*FRect, angle: f64, center: ?*FPoint, flip: i32) bool;
+extern fn SDL_RenderReadPixels(renderer: ?ptr, rect: ?*Rect) ?ptr;
+extern fn SDL_GetTextureSize(texture: ?ptr, w: ?*f32, h: ?*f32) bool;
+
+// Surfaces
+extern fn SDL_CreateSurface(width: i32, height: i32, format: u32) ?ptr;
+extern fn SDL_CreateSurfaceFrom(width: i32, height: i32, format: u32, pixels: ?ptr, pitch: i32) ?ptr;
+extern fn SDL_DestroySurface(surface: ?ptr) void;
+extern fn SDL_ConvertSurface(surface: ?ptr, format: u32) ?ptr;
+extern fn SDL_SaveBMP(surface: ?ptr, file: ?cstring) bool;
+extern fn SDL_LockSurface(surface: ?ptr) bool;
+extern fn SDL_UnlockSurface(surface: ?ptr) void;
+
+// Events & Input
+extern fn SDL_PollEvent(event: *Event) bool;
+extern fn SDL_WaitEvent(event: *Event) bool;
+extern fn SDL_WaitEventTimeout(event: *Event, timeout_ms: i32) bool;
+extern fn SDL_PushEvent(event: *Event) bool;
+extern fn SDL_PumpEvents() void;
+extern fn SDL_GetMouseState(x: ?*f32, y: ?*f32) u32;
+extern fn SDL_GetGlobalMouseState(x: ?*f32, y: ?*f32) u32;
+extern fn SDL_GetModState() u16;
+extern fn SDL_StartTextInput(window: ?ptr) bool;
+extern fn SDL_StopTextInput(window: ?ptr) bool;
+extern fn SDL_SetTextInputArea(window: ?ptr, rect: ?*Rect, cursor: i32) bool;
+
+// Cursors
+extern fn SDL_CreateSystemCursor(id: i32) ?ptr;
+extern fn SDL_SetCursor(cursor: ?ptr) bool;
+extern fn SDL_DestroyCursor(cursor: ?ptr) void;
+
+// Clipboard & MessageBox
+extern fn SDL_GetClipboardText() ?cstring;
+extern fn SDL_SetClipboardText(text: ?cstring) bool;
+extern fn SDL_HasClipboardText() bool;
+extern fn SDL_ShowSimpleMessageBox(flags: u32, title: ?cstring, message: ?cstring, window: ?ptr) bool;

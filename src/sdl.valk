@@ -1,0 +1,492 @@
+// Idiomatic Valk wrappers around SDL3.
+
++ fn get_error() String {
+    let p = SDL_GetError()
+    if isset(p) : return p.to_string()
+    return ""
+}
+
++ fn get_version() i32 {
+    return SDL_GetVersion()
+}
+
++ fn init(flags: u32) !SdlError {
+    if !SDL_Init(flags) : throw .failed(get_error())
+}
+
++ fn init_subsystem(flags: u32) !SdlError {
+    if !SDL_InitSubSystem(flags) : throw .failed(get_error())
+}
+
++ fn quit_subsystem(flags: u32) {
+    SDL_QuitSubSystem(flags)
+}
+
++ fn quit() {
+    SDL_Quit()
+}
+
++ fn set_hint(name: String, value: String) bool {
+    @unsafe
+    return SDL_SetHint(name.data_cstring, value.data_cstring)
+}
+
++ fn get_hint(name: String) ?String {
+    @unsafe
+    let p = SDL_GetHint(name.data_cstring)
+    if isset(p) : return p.to_string()
+    return null
+}
+
++ fn get_ticks() u64 { return SDL_GetTicks() }
++ fn get_ticks_ns() u64 { return SDL_GetTicksNS() }
++ fn delay(ms: u32) { SDL_Delay(ms) }
++ fn delay_ns(ns: u64) { SDL_DelayNS(ns) }
++ fn get_performance_counter() u64 { return SDL_GetPerformanceCounter() }
++ fn get_performance_frequency() u64 { return SDL_GetPerformanceFrequency() }
+
+// Displays
++ fn get_primary_display() u32 { return SDL_GetPrimaryDisplay() }
+
++ fn get_display_bounds(display_id: u32) ?Rect {
+    let r = Rect{}
+    if SDL_GetDisplayBounds(display_id, &r) : return r
+    return null
+}
+
++ fn get_display_usable_bounds(display_id: u32) ?Rect {
+    let r = Rect{}
+    if SDL_GetDisplayUsableBounds(display_id, &r) : return r
+    return null
+}
+
+// Render drivers
++ fn get_num_render_drivers() i32 { return SDL_GetNumRenderDrivers() }
+
++ fn get_render_driver(index: i32) String {
+    let p = SDL_GetRenderDriver(index)
+    if isset(p) : return p.to_string()
+    return ""
+}
+
+// Events & Input
++ fn poll_event() ?Event {
+    let ev = Event{}
+    if SDL_PollEvent(&ev) : return ev
+    return null
+}
+
++ fn wait_event() ?Event {
+    let ev = Event{}
+    if SDL_WaitEvent(&ev) : return ev
+    return null
+}
+
++ fn wait_event_timeout(timeout_ms: i32) ?Event {
+    let ev = Event{}
+    if SDL_WaitEventTimeout(&ev, timeout_ms) : return ev
+    return null
+}
+
++ fn push_event(event: Event) bool {
+    let ev = event
+    return SDL_PushEvent(&ev)
+}
+
++ fn pump_events() {
+    SDL_PumpEvents()
+}
+
++ fn get_mouse_state() (u32, f32, f32) {
+    let x: f32 = 0
+    let y: f32 = 0
+    let buttons = SDL_GetMouseState(&x, &y)
+    return (buttons, x, y)
+}
+
++ fn get_mod_state() u16 {
+    return SDL_GetModState()
+}
+
+// Clipboard
++ fn get_clipboard_text() String {
+    let p = SDL_GetClipboardText()
+    if !isset(p) : return ""
+    let s = p.to_string()
+    @unsafe
+    SDL_free(p.@cast(ptr))
+    return s
+}
+
++ fn set_clipboard_text(text: String) bool {
+    @unsafe
+    return SDL_SetClipboardText(text.data_cstring)
+}
+
++ fn has_clipboard_text() bool {
+    return SDL_HasClipboardText()
+}
+
+// Message boxes
++ fn show_simple_message_box(flags: u32, title: String, message: String, window: ?Window (null)) bool {
+    let wp: ?ptr = isset(window) ? window.handle : null
+    @unsafe
+    return SDL_ShowSimpleMessageBox(flags, title.data_cstring, message.data_cstring, wp)
+}
+
+/// An SDL3 OS window. Call `destroy()` when done.
++ class Window {
+    handle: ?ptr (null)
+
+    + static fn create(title: String, width: i32, height: i32, flags: u64 (0)) Window !SdlError {
+        @unsafe
+        let h = SDL_CreateWindow(title.data_cstring, width, height, flags)
+        if !isset(h) : throw .failed(get_error())
+        return Window{ handle: h }
+    }
+
+    + fn destroy() {
+        let h = this.handle
+        if isset(h) {
+            @unsafe
+            SDL_DestroyWindow(h)
+            this.handle = null
+        }
+    }
+
+    + fn id() u32 {
+        @unsafe
+        return SDL_GetWindowID(this.handle)
+    }
+    + fn show() bool {
+        @unsafe
+        return SDL_ShowWindow(this.handle)
+    }
+    + fn hide() bool {
+        @unsafe
+        return SDL_HideWindow(this.handle)
+    }
+    + fn raise() bool {
+        @unsafe
+        return SDL_RaiseWindow(this.handle)
+    }
+    + fn maximize() bool {
+        @unsafe
+        return SDL_MaximizeWindow(this.handle)
+    }
+    + fn minimize() bool {
+        @unsafe
+        return SDL_MinimizeWindow(this.handle)
+    }
+    + fn restore() bool {
+        @unsafe
+        return SDL_RestoreWindow(this.handle)
+    }
+    + fn sync() bool {
+        @unsafe
+        return SDL_SyncWindow(this.handle)
+    }
+
+    + fn set_title(title: String) bool {
+        @unsafe
+        return SDL_SetWindowTitle(this.handle, title.data_cstring)
+    }
+
+    + fn title() String {
+        @unsafe
+        let p = SDL_GetWindowTitle(this.handle)
+        if isset(p) : return p.to_string()
+        return ""
+    }
+
+    + fn set_size(w: i32, h: i32) bool {
+        @unsafe
+        return SDL_SetWindowSize(this.handle, w, h)
+    }
+
+    + fn size() (i32, i32) {
+        let w: i32 = 0
+        let h: i32 = 0
+        @unsafe
+        SDL_GetWindowSize(this.handle, &w, &h)
+        return (w, h)
+    }
+
+    + fn size_in_pixels() (i32, i32) {
+        let w: i32 = 0
+        let h: i32 = 0
+        @unsafe
+        SDL_GetWindowSizeInPixels(this.handle, &w, &h)
+        return (w, h)
+    }
+
+    + fn set_position(x: i32, y: i32) bool {
+        @unsafe
+        return SDL_SetWindowPosition(this.handle, x, y)
+    }
+
+    + fn position() (i32, i32) {
+        let x: i32 = 0
+        let y: i32 = 0
+        @unsafe
+        SDL_GetWindowPosition(this.handle, &x, &y)
+        return (x, y)
+    }
+
+    + fn set_minimum_size(min_w: i32, min_h: i32) bool {
+        @unsafe
+        return SDL_SetWindowMinimumSize(this.handle, min_w, min_h)
+    }
+    + fn set_maximum_size(max_w: i32, max_h: i32) bool {
+        @unsafe
+        return SDL_SetWindowMaximumSize(this.handle, max_w, max_h)
+    }
+    + fn flags() u64 {
+        @unsafe
+        return SDL_GetWindowFlags(this.handle)
+    }
+    + fn is_maximized() bool { return (this.flags() & WINDOW_MAXIMIZED) != 0 }
+    + fn is_minimized() bool { return (this.flags() & WINDOW_MINIMIZED) != 0 }
+    + fn display_scale() f32 {
+        @unsafe
+        return SDL_GetWindowDisplayScale(this.handle)
+    }
+    + fn pixel_density() f32 {
+        @unsafe
+        return SDL_GetWindowPixelDensity(this.handle)
+    }
+    + fn display_id() u32 {
+        @unsafe
+        return SDL_GetDisplayForWindow(this.handle)
+    }
+    + fn set_fullscreen(fullscreen: bool) bool {
+        @unsafe
+        return SDL_SetWindowFullscreen(this.handle, fullscreen)
+    }
+    + fn set_resizable(resizable: bool) bool {
+        @unsafe
+        return SDL_SetWindowResizable(this.handle, resizable)
+    }
+    + fn set_opacity(opacity: f32) bool {
+        @unsafe
+        return SDL_SetWindowOpacity(this.handle, opacity)
+    }
+    + fn start_text_input() bool {
+        @unsafe
+        return SDL_StartTextInput(this.handle)
+    }
+    + fn stop_text_input() bool {
+        @unsafe
+        return SDL_StopTextInput(this.handle)
+    }
+
+    + fn set_text_input_area(rect: Rect, cursor: i32 (0)) bool {
+        let r = rect
+        @unsafe
+        return SDL_SetTextInputArea(this.handle, &r, cursor)
+    }
+
+    + fn set_icon_rgba(width: i32, height: i32, rgba: local &[u8]) bool {
+        if width <= 0 || height <= 0 || rgba.length < (width * height * 4).to(uint) : return false
+        @unsafe
+        let surf = SDL_CreateSurfaceFrom(width, height, PIXELFORMAT_RGBA32, rgba.data, width * 4)
+        if !isset(surf) : return false
+        @unsafe
+        let ok = SDL_SetWindowIcon(this.handle, surf)
+        @unsafe
+        SDL_DestroySurface(surf)
+        return ok
+    }
+}
+
+/// An SDL3 2D renderer (D3D11/12 on Windows, Metal on macOS, Vulkan/OpenGL/software on Linux).
++ class Renderer {
+    handle: ?ptr (null)
+
+    + static fn create(window: Window, driver: String ("")) Renderer !SdlError {
+        let name: ?cstring = null
+        @unsafe
+        if driver.length > 0 : name = driver.data_cstring
+        @unsafe
+        let h = SDL_CreateRenderer(window.handle, name)
+        if !isset(h) : throw .failed(get_error())
+        return Renderer{ handle: h }
+    }
+
+    + fn destroy() {
+        let h = this.handle
+        if isset(h) {
+            @unsafe
+            SDL_DestroyRenderer(h)
+            this.handle = null
+        }
+    }
+
+    + fn name() String {
+        @unsafe
+        let p = SDL_GetRendererName(this.handle)
+        if isset(p) : return p.to_string()
+        return ""
+    }
+
+    + fn set_draw_color(r: u8, g: u8, b: u8, a: u8 (255)) bool {
+        @unsafe
+        return SDL_SetRenderDrawColor(this.handle, r, g, b, a)
+    }
+
+    + fn set_draw_blend_mode(mode: u32) bool {
+        @unsafe
+        return SDL_SetRenderDrawBlendMode(this.handle, mode)
+    }
+
+    + fn clear() bool {
+        @unsafe
+        return SDL_RenderClear(this.handle)
+    }
+    + fn present() bool {
+        @unsafe
+        return SDL_RenderPresent(this.handle)
+    }
+    + fn set_vsync(vsync: i32) bool {
+        @unsafe
+        return SDL_SetRenderVSync(this.handle, vsync)
+    }
+
+    + fn set_clip_rect(rect: ?Rect) bool {
+        if isset(rect) {
+            let r: Rect = rect
+            @unsafe
+            return SDL_SetRenderClipRect(this.handle, &r)
+        }
+        @unsafe
+        return SDL_SetRenderClipRect(this.handle, null)
+    }
+
+    + fn fill_rect(rect: FRect) bool {
+        let r = rect
+        @unsafe
+        return SDL_RenderFillRect(this.handle, &r)
+    }
+
+    + fn draw_rect(rect: FRect) bool {
+        let r = rect
+        @unsafe
+        return SDL_RenderRect(this.handle, &r)
+    }
+
+    + fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32) bool {
+        @unsafe
+        return SDL_RenderLine(this.handle, x1, y1, x2, y2)
+    }
+
+    + fn draw_point(x: f32, y: f32) bool {
+        @unsafe
+        return SDL_RenderPoint(this.handle, x, y)
+    }
+
+    + fn geometry(vertices: local &[Vertex], indices: local &[i32] (.{}), texture: ?Texture (null)) bool {
+        let tp: ?ptr = isset(texture) ? texture.handle : null
+        let idx_ptr: ?*[i32] = indices.length > 0 ? indices.data : null
+        @unsafe
+        return SDL_RenderGeometry(this.handle, tp, vertices.data, vertices.length.to(i32), idx_ptr, indices.length.to(i32))
+    }
+
+    + fn create_texture(format: u32, access: TextureAccess, w: i32, h: i32) Texture !SdlError {
+        @unsafe
+        let hdl = SDL_CreateTexture(this.handle, format, access.to(i32), w, h)
+        if !isset(hdl) : throw .failed(get_error())
+        return Texture{ handle: hdl, width: w, height: h }
+    }
+
+    + fn render_texture(texture: Texture, src: ?FRect (null), dst: ?FRect (null)) bool {
+        if isset(src) && isset(dst) {
+            let s: FRect = src
+            let d: FRect = dst
+            @unsafe
+            return SDL_RenderTexture(this.handle, texture.handle, &s, &d)
+        }
+        if isset(src) {
+            let s: FRect = src
+            @unsafe
+            return SDL_RenderTexture(this.handle, texture.handle, &s, null)
+        }
+        if isset(dst) {
+            let d: FRect = dst
+            @unsafe
+            return SDL_RenderTexture(this.handle, texture.handle, null, &d)
+        }
+        @unsafe
+        return SDL_RenderTexture(this.handle, texture.handle, null, null)
+    }
+
+    + fn set_scale(sx: f32, sy: f32) bool {
+        @unsafe
+        return SDL_SetRenderScale(this.handle, sx, sy)
+    }
+
+    + fn set_logical_presentation(w: i32, h: i32, mode: LogicalPresentation) bool {
+        @unsafe
+        return SDL_SetRenderLogicalPresentation(this.handle, w, h, mode.to(i32))
+    }
+}
+
+/// An SDL3 GPU texture owned by a `Renderer`. Call `destroy()` when done.
++ class Texture {
+    + handle: ?ptr (null)
+    + width: i32 (0)
+    + height: i32 (0)
+
+    + fn destroy() {
+        let h = this.handle
+        if isset(h) {
+            @unsafe
+            SDL_DestroyTexture(h)
+            this.handle = null
+        }
+    }
+
+    + fn update(pixels: local &[u8], pitch: i32, rect: ?Rect (null)) bool {
+        if isset(rect) {
+            let r: Rect = rect
+            @unsafe
+            return SDL_UpdateTexture(this.handle, &r, pixels.data, pitch)
+        }
+        @unsafe
+        return SDL_UpdateTexture(this.handle, null, pixels.data, pitch)
+    }
+
+    + fn set_blend_mode(mode: u32) bool {
+        @unsafe
+        return SDL_SetTextureBlendMode(this.handle, mode)
+    }
+
+    + fn set_scale_mode(mode: ScaleMode) bool {
+        @unsafe
+        return SDL_SetTextureScaleMode(this.handle, mode.to(i32))
+    }
+}
+
+/// An SDL3 system cursor. Call `destroy()` when done.
++ class Cursor {
+    handle: ?ptr (null)
+
+    + static fn system(kind: SystemCursor) Cursor !SdlError {
+        let h = SDL_CreateSystemCursor(kind.to(i32))
+        if !isset(h) : throw .failed(get_error())
+        return Cursor{ handle: h }
+    }
+
+    + fn apply() bool {
+        @unsafe
+        return SDL_SetCursor(this.handle)
+    }
+
+    + fn destroy() {
+        let h = this.handle
+        if isset(h) {
+            @unsafe
+            SDL_DestroyCursor(h)
+            this.handle = null
+        }
+    }
+}

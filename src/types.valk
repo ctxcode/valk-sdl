@@ -1,0 +1,241 @@
+// SDL3 C-compatible value structs and event union accessors.
+
++ union SdlError {
+    failed(String)
+
+    + get message: String {
+        return match this : String {
+            .failed(msg) => msg
+        }
+    }
+
+    + fn to_string() String $auto {
+        return this.message
+    }
+}
+
++ struct Rect {
+    + x: i32 (0)
+    + y: i32 (0)
+    + w: i32 (0)
+    + h: i32 (0)
+}
+
++ struct FRect {
+    + x: f32 (0)
+    + y: f32 (0)
+    + w: f32 (0)
+    + h: f32 (0)
+}
+
++ struct Point {
+    + x: i32 (0)
+    + y: i32 (0)
+}
+
++ struct FPoint {
+    + x: f32 (0)
+    + y: f32 (0)
+}
+
++ struct Color {
+    + r: u8 (0)
+    + g: u8 (0)
+    + b: u8 (0)
+    + a: u8 (255)
+
+    + static fn rgb(r: u8, g: u8, b: u8) Color { return .{ r: r, g: g, b: b, a: 255 } }
+    + static fn rgba(r: u8, g: u8, b: u8, a: u8) Color { return .{ r: r, g: g, b: b, a: a } }
+}
+
++ struct FColor {
+    + r: f32 (0)
+    + g: f32 (0)
+    + b: f32 (0)
+    + a: f32 (1)
+}
+
++ struct Vertex {
+    + position: FPoint (.{})
+    + color: FColor (.{})
+    + tex_coord: FPoint (.{})
+}
+
++ struct SurfaceHeader {
+    + flags: u32 (0)
+    + format: u32 (0)
+    + w: i32 (0)
+    + h: i32 (0)
+    + pitch: i32 (0)
+    _pad: i32 (0)
+    + pixels: ?ptr (null)
+}
+
++ struct WindowEvent {
+    + type: u32 (0)
+    reserved: u32 (0)
+    + timestamp: u64 (0)
+    + window_id: u32 (0)
+    + data1: i32 (0)
+    + data2: i32 (0)
+}
+
++ struct KeyboardEvent {
+    + type: u32 (0)
+    reserved: u32 (0)
+    + timestamp: u64 (0)
+    + window_id: u32 (0)
+    + which: u32 (0)
+    + scancode: u32 (0)
+    + key: u32 (0)
+    + mod: u16 (0)
+    + raw: u16 (0)
+    + down: bool (false)
+    + repeat: bool (false)
+}
+
++ struct MouseMotionEvent {
+    + type: u32 (0)
+    reserved: u32 (0)
+    + timestamp: u64 (0)
+    + window_id: u32 (0)
+    + which: u32 (0)
+    + state: u32 (0)
+    + x: f32 (0)
+    + y: f32 (0)
+    + xrel: f32 (0)
+    + yrel: f32 (0)
+}
+
++ struct MouseButtonEvent {
+    + type: u32 (0)
+    reserved: u32 (0)
+    + timestamp: u64 (0)
+    + window_id: u32 (0)
+    + which: u32 (0)
+    + button: u8 (0)
+    + down: bool (false)
+    + clicks: u8 (0)
+    _pad: u8 (0)
+    + x: f32 (0)
+    + y: f32 (0)
+}
+
++ struct MouseWheelEvent {
+    + type: u32 (0)
+    reserved: u32 (0)
+    + timestamp: u64 (0)
+    + window_id: u32 (0)
+    + which: u32 (0)
+    + x: f32 (0)
+    + y: f32 (0)
+    + direction: u32 (0)
+    + mouse_x: f32 (0)
+    + mouse_y: f32 (0)
+}
+
++ struct TextInputEvent {
+    + type: u32 (0)
+    reserved: u32 (0)
+    + timestamp: u64 (0)
+    + window_id: u32 (0)
+    _pad: u32 (0)
+    text_ptr: ?cstring (null)
+
+    + get text: String {
+        let p = this.text_ptr
+        if isset(p) : return p.to_string()
+        return ""
+    }
+}
+
++ struct TextEditingEvent {
+    + type: u32 (0)
+    reserved: u32 (0)
+    + timestamp: u64 (0)
+    + window_id: u32 (0)
+    _pad: u32 (0)
+    text_ptr: ?cstring (null)
+    + start: i32 (0)
+    + length: i32 (0)
+
+    + get text: String {
+        let p = this.text_ptr
+        if isset(p) : return p.to_string()
+        return ""
+    }
+}
+
++ struct DropEvent {
+    + type: u32 (0)
+    reserved: u32 (0)
+    + timestamp: u64 (0)
+    + window_id: u32 (0)
+    + x: f32 (0)
+    + y: f32 (0)
+    _pad: u32 (0)
+    source_ptr: ?cstring (null)
+    data_ptr: ?cstring (null)
+
+    + get source: String {
+        let p = this.source_ptr
+        if isset(p) : return p.to_string()
+        return ""
+    }
+
+    + get data: String {
+        let p = this.data_ptr
+        if isset(p) : return p.to_string()
+        return ""
+    }
+}
+
+/// 128-byte, 8-byte-aligned buffer matching `SDL_Event`.
++ struct Event {
+    raw: [u64 x 16] (.{ 0 ... })
+
+    + get type: u32 {
+        @unsafe
+        return (&this.raw).@cast(*[u32])[0]
+    }
+
+    + fn window() WindowEvent {
+        @unsafe
+        return (&this.raw).@cast(*[WindowEvent])[0]
+    }
+
+    + fn key() KeyboardEvent {
+        @unsafe
+        return (&this.raw).@cast(*[KeyboardEvent])[0]
+    }
+
+    + fn motion() MouseMotionEvent {
+        @unsafe
+        return (&this.raw).@cast(*[MouseMotionEvent])[0]
+    }
+
+    + fn button() MouseButtonEvent {
+        @unsafe
+        return (&this.raw).@cast(*[MouseButtonEvent])[0]
+    }
+
+    + fn wheel() MouseWheelEvent {
+        @unsafe
+        return (&this.raw).@cast(*[MouseWheelEvent])[0]
+    }
+
+    + fn text() TextInputEvent {
+        @unsafe
+        return (&this.raw).@cast(*[TextInputEvent])[0]
+    }
+
+    + fn text_editing() TextEditingEvent {
+        @unsafe
+        return (&this.raw).@cast(*[TextEditingEvent])[0]
+    }
+
+    + fn drop() DropEvent {
+        @unsafe
+        return (&this.raw).@cast(*[DropEvent])[0]
+    }
+}

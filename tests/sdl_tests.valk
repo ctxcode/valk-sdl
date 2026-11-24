@@ -1,0 +1,69 @@
+use sdl
+
+test "sdl: version, drivers, and headless dummy video lifecycle" {
+    let ver = sdl.get_version()
+    assert(ver >= 3000000)
+
+    sdl.set_hint(sdl.HINT_VIDEO_DRIVER, "dummy")
+    sdl.init(sdl.INIT_VIDEO) ! {
+        assert(false)
+        return
+    }
+    defer { sdl.quit() }
+
+    assert(sdl.get_num_render_drivers() >= 1)
+
+    let win = sdl.Window.create("valk-sdl test", 320, 240, sdl.WINDOW_HIDDEN | sdl.WINDOW_RESIZABLE) ! {
+        assert(false)
+        return
+    }
+    defer { win.destroy() }
+
+    assert(win.title() == "valk-sdl test")
+    win.set_title("renamed")
+    assert(win.title() == "renamed")
+
+    let w, h = win.size()
+    assert(w == 320 && h == 240)
+
+    let ren = sdl.Renderer.create(win) ! {
+        assert(false)
+        return
+    }
+    defer { ren.destroy() }
+    assert(ren.name().length > 0)
+
+    let tex = ren.create_texture(sdl.PIXELFORMAT_RGBA32, .streaming, 64, 64) ! {
+        assert(false)
+        return
+    }
+    defer { tex.destroy() }
+
+    let pixels = [u8]{ 255 x (64 * 64 * 4) }
+    assert(tex.update(pixels, 64 * 4))
+    assert(ren.set_draw_color(16, 20, 28, 255))
+    assert(ren.clear())
+    assert(ren.render_texture(tex))
+    assert(ren.present())
+
+    // Dummy driver does not implement window icons; verify call is safe without crashing
+    let _ = win.set_icon_rgba(4, 4, [u8]{ 255 x (4 * 4 * 4) })
+
+    assert(ren.set_clip_rect(.{ x: 0, y: 0, w: 32, h: 32 }))
+    assert(ren.fill_rect(.{ x: 0, y: 0, w: 16, h: 16 }))
+    assert(ren.set_clip_rect(null))
+
+    let _ = sdl.poll_event()
+    assert(sdl.get_ticks() >= 0)
+}
+
+test "sdl: struct sizes match C ABI" {
+    assert(size_of(sdl.Rect) == 16)
+    assert(size_of(sdl.FRect) == 16)
+    assert(size_of(sdl.Point) == 8)
+    assert(size_of(sdl.FPoint) == 8)
+    assert(size_of(sdl.Color) == 4)
+    assert(size_of(sdl.FColor) == 16)
+    assert(size_of(sdl.Vertex) == 32)
+    assert(size_of(sdl.Event) == 128)
+}

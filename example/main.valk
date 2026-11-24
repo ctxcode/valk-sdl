@@ -1,0 +1,41 @@
+use sdl
+
+fn main() {
+    sdl.init(sdl.INIT_VIDEO) ! {
+        println("SDL init failed: " + E.message)
+        exit(1)
+    }
+    defer { sdl.quit() }
+
+    let win = sdl.Window.create("valk-sdl example", 800, 500, sdl.WINDOW_RESIZABLE | sdl.WINDOW_HIGH_PIXEL_DENSITY) ! {
+        println("Window failed: " + E.message)
+        exit(1)
+    }
+    defer { win.destroy() }
+
+    let ren = sdl.Renderer.create(win) ! {
+        println("Renderer failed: " + E.message)
+        exit(1)
+    }
+    defer { ren.destroy() }
+    ren.set_vsync(1)
+
+    let running = true
+    while running {
+        while true {
+            let ev = sdl.poll_event() ?! break
+            if ev.type == sdl.EVENT_QUIT || ev.type == sdl.EVENT_WINDOW_CLOSE_REQUESTED {
+                running = false
+            }
+            if ev.type == sdl.EVENT_KEY_DOWN && ev.key().key == sdl.SDLK_ESCAPE {
+                running = false
+            }
+        }
+        ren.set_draw_color(18, 22, 32, 255)
+        ren.clear()
+        ren.set_draw_color(79, 143, 247, 255)
+        ren.fill_rect(.{ x: 120, y: 100, w: 560, h: 300 })
+        ren.present()
+        sdl.delay(16)
+    }
+}

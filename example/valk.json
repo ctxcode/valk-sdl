@@ -1,0 +1,9 @@
+{
+    "src": ".",
+    "dependencies": {
+        "sdl": {
+            "src": "../",
+            "libs": true
+        }
+    }
+}
