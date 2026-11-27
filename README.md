@@ -14,7 +14,7 @@ Valk 0.9.1+. Prebuilt SDL3 libraries are bundled directly in `libs/<target>/`:
 Install with bundled libraries enabled:
 
 ```sh
-vman install github.com/ctxcode/valk-sdl --libs
+vman install github.com/zikue/valk-sdl --libs
 ```
 
 Or add `"libs": true` on the `sdl` entry in your project's `valk.json`. To regenerate the bundled libraries from source, run `./scripts/build-libs.sh`.
